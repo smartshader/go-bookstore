@@ -3,6 +3,7 @@ package users
 import (
 	"fmt"
 
+	"smartshader/go-bookstore/users/utils/date"
 	"smartshader/go-bookstore/users/utils/errors"
 )
 
@@ -33,6 +34,8 @@ func (user *User) Save() *errors.RestErr {
 		}
 		return errors.NewBadRequestError(fmt.Sprintf("user %d already exists", user.Id))
 	}
+
+	user.DateCreated = date.GetNowString()
 
 	usersDB[user.Id] = user
 	return nil
