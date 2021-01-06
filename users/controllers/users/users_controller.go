@@ -2,6 +2,7 @@ package users
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,7 +11,7 @@ import (
 	"smartshader/go-bookstore/users/utils/errors"
 )
 
-func GetUser(c *gin.Context) {
+func SearchUser(c *gin.Context) {
 	c.String(http.StatusNotImplemented, "implement me!")
 }
 
@@ -32,6 +33,19 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, res)
 }
 
-func SearchUser(c *gin.Context) {
-	c.String(http.StatusNotImplemented, "implement me!")
+func GetUser(c *gin.Context) {
+	userId, err := strconv.ParseInt(c.Param("user_id"), 10, 10)
+	if err != nil {
+		restErr := errors.NewBadRequestError("user id should be a number")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+
+	user, restErr := services.GetUser(userId)
+	if restErr != nil {
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
