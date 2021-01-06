@@ -11,24 +11,28 @@ import (
 
 const (
 	queryInsertUser  = "INSERT INTO users(first_name, last_name, email, date_created) VALUES (?, ?, ?, ?);"
+	queryGetUser     = "SELECT id, first_name, last_name, email, date_created FROM users WHERE id=?;"
 	indexUniqueEmail = "email_UNIQUE"
-)
-
-var (
-	usersDB = make(map[int64]*User)
+	errorNoRows      = "no rows in result set"
 )
 
 func (user *User) Get() *errors.RestErr {
-	res := usersDB[user.Id]
-	if res == nil {
-		return errors.NewNotFoundError(fmt.Sprintf("user %d not found", user.Id))
+	stmt, err := users_db.Client.Prepare(queryGetUser)
+	if err != nil {
+		return errors.NewInternalServerError(err.Error())
 	}
+	defer stmt.Close()
 
-	user.Id = res.Id
-	user.FirstName = res.FirstName
-	user.LastName = res.LastName
-	user.Email = res.Email
-	user.DateCreated = res.DateCreated
+	res := stmt.QueryRow(user.Id)
+	if err = res.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
+		if strings.Contains(err.Error(), errorNoRows) {
+			return errors.NewNotFoundError(
+				fmt.Sprintf("user %d not found", user.Id))
+		}
+
+		return errors.NewInternalServerError(
+			fmt.Sprintf("error when trying to get user %d: %s", user.Id, err.Error()))
+	}
 
 	return nil
 }
@@ -48,6 +52,7 @@ func (user *User) Save() *errors.RestErr {
 			return errors.NewBadRequestError(
 				fmt.Sprintf("email %s already exists", user.Email))
 		}
+
 		return errors.NewInternalServerError(
 			fmt.Sprintf("error when trying to save user: %s", err.Error()))
 	}
