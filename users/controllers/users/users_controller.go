@@ -11,11 +11,20 @@ import (
 	"smartshader/go-bookstore/users/utils/errors"
 )
 
+func getUserId(userIdParam string) (int64, *errors.RestErr) {
+	userId, err := strconv.ParseInt(userIdParam, 10, 10)
+	if err != nil {
+		return 0, errors.NewBadRequestError("user id should be a number")
+	}
+
+	return userId, nil
+}
+
 func SearchUser(c *gin.Context) {
 	c.String(http.StatusNotImplemented, "implement me!")
 }
 
-func CreateUser(c *gin.Context) {
+func Create(c *gin.Context) {
 	var user users.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		restErr := errors.NewBadRequestError("Invalid json body")
@@ -32,10 +41,9 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, res)
 }
 
-func GetUser(c *gin.Context) {
-	userId, err := strconv.ParseInt(c.Param("user_id"), 10, 10)
-	if err != nil {
-		restErr := errors.NewBadRequestError("user id should be a number")
+func Get(c *gin.Context) {
+	userId, restErr := getUserId(c.Param("user_id"))
+	if restErr != nil {
 		c.JSON(restErr.Status, restErr)
 		return
 	}
@@ -49,17 +57,16 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func UpdateUser(c *gin.Context) {
-	userId, err := strconv.ParseInt(c.Param("user_id"), 10, 10)
-	if err != nil {
-		restErr := errors.NewBadRequestError("user id should be a number")
+func Update(c *gin.Context) {
+	userId, restErr := getUserId(c.Param("user_id"))
+	if restErr != nil {
 		c.JSON(restErr.Status, restErr)
 		return
 	}
 
 	var user users.User
-	if err = c.ShouldBindJSON(&user); err != nil {
-		restErr := errors.NewBadRequestError("Invalid json body")
+	if err := c.ShouldBindJSON(&user); err != nil {
+		restErr = errors.NewBadRequestError("Invalid json body")
 		c.JSON(restErr.Status, restErr)
 		return
 	}
@@ -75,4 +82,19 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func Delete(c *gin.Context) {
+	userId, restErr := getUserId(c.Param("user_id"))
+	if restErr != nil {
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+
+	if restErr = services.DeleteUser(userId); restErr != nil {
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
