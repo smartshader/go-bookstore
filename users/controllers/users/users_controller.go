@@ -20,10 +20,6 @@ func getUserId(userIdParam string) (int64, *errors.RestErr) {
 	return userId, nil
 }
 
-func SearchUser(c *gin.Context) {
-	c.String(http.StatusNotImplemented, "implement me!")
-}
-
 func Create(c *gin.Context) {
 	var user users.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -97,4 +93,16 @@ func Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func Search(c *gin.Context) {
+	status := c.Query("status")
+
+	users, err := services.SearchUsers(status)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
 }
